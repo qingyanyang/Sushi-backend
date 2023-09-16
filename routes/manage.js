@@ -1,4 +1,4 @@
-require('dotenv').config();
+// require('dotenv').config({ debug: true });
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
@@ -95,7 +95,7 @@ router.get('/role/list', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
+      res.status(500).send('request failed~~')
     })
 });
 
@@ -114,11 +114,11 @@ router.get('/employee/list', function (req, res, next) {
           }
           res.send(JSON.stringify(response))
         }).catch(err => {
-          res.status(500).send('读取失败~~')
+          res.status(500).send('request failed~~')
         })
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
+      res.status(500).send('request failed~~')
     })
 });
 
@@ -166,7 +166,7 @@ router.get('/employee/record_list', function (req, res, next) {
       res.send(JSON.stringify(response));
     })
     .catch((err) => {
-      res.status(500).send('读取失败~~');
+      res.status(500).send('request failed~~');
     });
 
 });
@@ -194,11 +194,11 @@ router.get('/order/list', function (req, res, next) {
           res.send(JSON.stringify(response))
         })
         .catch(err => {
-          res.status(500).send('读取失败~~')
+          res.status(500).send('request failed~~')
         })
     })
     .catch(err => {
-      res.status(500).send('获取总条数失败~~')
+      res.status(500).send('request list failed~~')
     })
 });
 
@@ -212,7 +212,7 @@ router.get('/storage/category_list', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
+      res.status(500).send('request failed~~')
     })
 });
 
@@ -230,7 +230,7 @@ router.get('/storage/item_list', function (req, res, next) {
         res.send(JSON.stringify(response))
       })
       .catch(err => {
-        res.status(500).send('读取失败~~')
+        res.status(500).send('request failed~~')
       })
   } else {
     StorageItemListModel.countDocuments({})
@@ -253,11 +253,11 @@ router.get('/storage/item_list', function (req, res, next) {
             res.send(JSON.stringify(response))
           })
           .catch(err => {
-            res.status(500).send('读取失败~~')
+            res.status(500).send('request failed~~')
           })
       })
       .catch(err => {
-        res.status(500).send('获取总条数失败~~')
+        res.status(500).send('request list failed~~')
       })
   }
 });
@@ -288,11 +288,11 @@ router.get('/storage/item_list_sort', function (req, res, next) {
           res.send(JSON.stringify(response))
         })
         .catch(err => {
-          res.status(500).send('读取失败~~')
+          res.status(500).send('request failed~~')
         })
     })
     .catch(err => {
-      res.status(500).send('获取总条数失败~~')
+      res.status(500).send('request list failed~~')
     })
 });
 
@@ -329,7 +329,7 @@ router.get('/storage/operation_record', function (req, res, next) {
       res.send(JSON.stringify(response));
     })
     .catch((err) => {
-      res.status(500).send('读取失败~~');
+      res.status(500).send('request failed~~');
     });
 });
 
@@ -345,20 +345,24 @@ router.get('/category/name', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
+      res.status(500).send('request failed~~')
     })
 });
 
 router.get('/item/search', function (req, res, next) {
   const { ...searchQuery } = req.query;
-  const [searchType, searchName] = Object.entries(searchQuery)[0];
-  const reg = new RegExp(searchName, 'i')
+  const [searchType, searchName] = Object.entries(searchQuery)[0] || [];
+  const reg = new RegExp(searchName, 'i');
 
-  MenuDetailModel.find(
-    {
-      [searchType]: reg
-    }
-  )
+  const findQuery = searchType ? { [searchType]: reg } : {};
+
+  MenuDetailModel.find(findQuery)
+    .then(list => {
+      if (list.length === 0) {
+        return MenuDetailModel.find({});
+      }
+      return list;
+    })
     .then(list => {
       const response = {
         status: 0,
@@ -370,24 +374,35 @@ router.get('/item/search', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
-    })
+      res.status(500).send('request failed~~');
+    });
 });
+
 
 router.get('/order/search', function (req, res, next) {
   const { ...searchQuery } = req.query;
-  const [searchType, searchName] = Object.entries(searchQuery)[0];
+  const [searchType, searchName] = Object.entries(searchQuery)[0] || [];
 
   let query;
-  if (searchType === '_id') {
-    // Convert the searchName to an ObjectId and use that in the query
-    query = { [searchType]: new mongoose.Types.ObjectId(searchName) };
+
+  if (searchType && searchName) {
+    if (searchType === '_id') {
+      query = { [searchType]: new mongoose.Types.ObjectId(searchName) };
+    } else {
+      const reg = new RegExp(searchName, 'i');
+      query = { [searchType]: reg };
+    }
   } else {
-    const reg = new RegExp(searchName, 'i')
-    query = { [searchType]: reg };
+    query = {}; 
   }
 
   OrderListModel.find(query)
+    .then(list => {
+      if (list.length === 0) {
+        return OrderListModel.find({});
+      }
+      return list;
+    })
     .then(list => {
       const response = {
         status: 0,
@@ -396,39 +411,39 @@ router.get('/order/search', function (req, res, next) {
           list
         }
       }
-      res.send(JSON.stringify(response))
+      res.send(JSON.stringify(response));
     })
     .catch(err => {
-      res.status(500).json({ error: '读取失败~~' });
-    })
+      res.status(500).json({ error: 'request failed~~' });
+    });
 });
 
 router.get('/employee/list_search', function (req, res, next) {
   const { ...searchQuery } = req.query;
-  const [searchType, searchName] = Object.entries(searchQuery)[0];
-  let find = {}
-  if (searchName !== '*') {
-    const reg = new RegExp(searchName, 'i')
+  const [searchType, searchName] = Object.entries(searchQuery)[0] || [];
+
+  let find = {};
+
+  if (searchName && searchName !== '*') {
+    const reg = new RegExp(searchName, 'i');
     find = {
       [searchType]: reg
-    }
+    };
   }
 
-  EmployeeListModel.find(
-    find
-  )
+  EmployeeListModel.find(find)
     .then(list => {
       const response = {
         status: 0,
         data: list
       }
-      res.send(JSON.stringify(response))
+      res.send(JSON.stringify(response));
     })
     .catch(err => {
-      res.status(500).send('读取失败~~')
-    })
-
+      res.status(500).send('request failed~~');
+    });
 });
+
 
 router.get('/order/list_rank', async function (req, res, next) {
   try {
@@ -470,10 +485,10 @@ router.get('/order/list_rank', async function (req, res, next) {
         res.send(JSON.stringify(response));
       })
       .catch((err) => {
-        res.status(500).send('获取总条数失败~~');
+        res.status(500).send('request list failed~~');
       });
   } catch (err) {
-    res.status(500).send('获取总条数失败~~');
+    res.status(500).send('request list failed~~');
   }
 });
 
@@ -494,7 +509,7 @@ router.post('/category/update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改失败~~')
+      res.status(500).send('update failed~~')
     })
 });
 
@@ -514,7 +529,7 @@ router.post('/category/add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('插入失败~~')
+      res.status(500).send('插入failed~~')
     })
 });
 
@@ -531,7 +546,7 @@ router.post('/category/delete', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('删除失败~~')
+      res.status(500).send('delete failed~~')
     })
 });
 
@@ -548,7 +563,7 @@ router.post('/item/update_status', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改状态失败~~')
+      res.status(500).send('update status failed~~')
     })
 });
 
@@ -564,7 +579,7 @@ router.post('/item/update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改商品失败~~')
+      res.status(500).send('update item failed~~')
     })
 });
 
@@ -580,7 +595,7 @@ router.post('/item/add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('添加商品失败~~')
+      res.status(500).send('add item failed~~')
     })
 });
 
@@ -655,7 +670,7 @@ router.post('/role/add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('添加失败~~')
+      res.status(500).send('add failed~~')
     })
 });
 
@@ -669,7 +684,7 @@ router.post('/role/update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改名称失败~~')
+      res.status(500).send('update 名称failed~~')
     })
 });
 
@@ -684,26 +699,31 @@ router.post('/role/delete', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('删除失败~~')
+      res.status(500).send('delete failed~~')
     })
 });
 
 router.post('/role/update_auth', function (req, res, next) {
   const { roleId, menus, time } = req.body;
 
-  //update create_time and auth_name and auth_time
+  if (!roleId || !menus) {
+    return res.status(400).send('Bad request: roleId or menus missing');
+  }
+
+  // Update create_time, auth_name, and auth_time
   EmployeesRoleModel.updateOne({ _id: roleId }, { $set: { menus: menus, auth_time: time } })
     .then(data => {
       const response = {
         status: 0,
         data
       }
-      res.send(JSON.stringify(response))
+      res.send(JSON.stringify(response));
     })
     .catch(err => {
-      res.status(500).send('更新失败~~')
-    })
+      res.status(500).send('Update failed~~');
+    });
 });
+
 
 router.post('/employee/add', function (req, res, next) {
   const { employee } = req.body;
@@ -718,7 +738,7 @@ router.post('/employee/add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('添加失败~~')
+      res.status(500).send('add failed~~')
     })
 });
 
@@ -732,7 +752,7 @@ router.post('/employee/delete', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('删除失败~~')
+      res.status(500).send('delete failed~~')
     })
 });
 
@@ -746,7 +766,7 @@ router.post('/employee/update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改失败~~')
+      res.status(500).send('update failed~~')
     })
 });
 
@@ -760,7 +780,7 @@ router.post('/order/delete', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('删除失败~~')
+      res.status(500).send('delete failed~~')
     })
 });
 
@@ -777,7 +797,7 @@ router.post('/storage/category_add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('添加失败~~')
+      res.status(500).send('add failed~~')
     })
 });
 
@@ -792,7 +812,7 @@ router.post('/storage/category_update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改失败~~')
+      res.status(500).send('update failed~~')
     })
 });
 
@@ -806,7 +826,7 @@ router.post('/storage/category_delete', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('删除失败~~')
+      res.status(500).send('delete failed~~')
     })
 });
 
@@ -822,7 +842,7 @@ router.post('/storage/item_update', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('修改商品失败~~')
+      res.status(500).send('update item failed~~')
     })
 });
 
@@ -837,7 +857,7 @@ router.post('/storage/item_add', function (req, res, next) {
       res.send(JSON.stringify(response))
     })
     .catch(err => {
-      res.status(500).send('添加商品失败~~')
+      res.status(500).send('add item failed~~')
     })
 });
 
@@ -869,11 +889,11 @@ router.get('/storage/item_search', function (req, res, next) {
           res.send(JSON.stringify(response))
         })
         .catch(err => {
-          res.status(500).send('读取失败~~')
+          res.status(500).send('request failed~~')
         })
     })
     .catch(err => {
-      res.status(500).send('获取总条数失败~~')
+      res.status(500).send('request list failed~~')
     })
 });
 

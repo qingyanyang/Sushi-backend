@@ -1,9 +1,11 @@
+// require('dotenv').config({ debug: true });
+
 /**
  * 
  * @param {*} success
  * @param {*} error
  */
-require('dotenv').config();
+
 module.exports = function (success, error) {
 
   if(typeof error !== 'function'){
@@ -17,6 +19,7 @@ module.exports = function (success, error) {
 
   //set strictQuery as true
   mongoose.set('strictQuery', true);
+  console.log("checking::",process.env.DBHOST, process.env.DBPORT, process.env.DBNAME);
 
   mongoose.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}/${process.env.DBNAME}`);
 
