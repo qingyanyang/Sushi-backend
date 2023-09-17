@@ -19,16 +19,18 @@ module.exports = function (success, error) {
 
   //set strictQuery as true
   mongoose.set('strictQuery', true);
-  console.log("checking::",process.env.DBHOST, process.env.DBPORT, process.env.DBNAME);
+  console.log("checking::", process.env.MONGODB_URI);
 
-  mongoose.connect(`mongodb://${process.env.DBHOST}:${process.env.DBPORT}/${process.env.DBNAME}`);
+  mongoose.connect(process.env.MONGODB_URI);
 
   mongoose.connection.once('open', () => {
     success();
+    console.log('connection success~~');
   });
 
   mongoose.connection.on('error', () => {
     error();
+    console.log('connection error~~');
   });
 
   mongoose.connection.on('close', () => {

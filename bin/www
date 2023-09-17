@@ -9,14 +9,14 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
      */
 
     var app = require('../app');
-    var debug = require('debug')('backserver:server');
+   var debug = require('debug')('Sushi-backend:server');
     var http = require('http');
 
     /**
      * Get port from environment and store in Express.
      */
 
-    var port = normalizePort(process.env.PORT);
+    var port = normalizePort(process.env.PORT||3000);
     app.set('port', port);
 
     /**

@@ -14,6 +14,9 @@ router.post('/login', (req, res, next) => {
   console.log(username, password)
   EmployeeListModel.find({ username })
   .then(data=>{
+    if (!data || data.length === 0) {
+      return res.status(400).send('User not found');
+    }
     let status = 0
     if (data[0].password !== password){
       status = 1
@@ -34,11 +37,13 @@ router.post('/login', (req, res, next) => {
           res.send(JSON.stringify(response))
         })
         .catch(err => {
+          console.log('err', err)
           res.status(500).send('login failed~~')
         })
     }
   })
   .catch(err=>{
+    console.log('err', err)
     res.status(500).send('login failed~~')
   })
 
