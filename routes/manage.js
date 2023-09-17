@@ -603,7 +603,7 @@ router.post('/img/upload', upload.single('image'), async function (req, res, nex
   try {
     // Access the uploaded file
     const image = req.file;
-
+    console.log('image',image)
     // Create a buffer from the binary image data
     const imageBuffer = Buffer.from(image.buffer, 'binary');
 
