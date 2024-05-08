@@ -10,7 +10,7 @@ module.exports = function (success, error) {
 
   if(typeof error !== 'function'){
     error = () => {
-      console.log('connection failed~~~');
+      console.log('connection failed~~~test');
     }
   }
 
